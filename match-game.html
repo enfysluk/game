@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Emoji Match-3 Game</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      background: #f0f8ff;
+    }
+    h1 {
+      margin-top: 20px;
+    }
+    #board {
+      display: grid;
+      grid-template-columns: repeat(6, 60px);
+      grid-gap: 5px;
+      justify-content: center;
+      margin: 20px auto;
+    }
+    .tile {
+      width: 60px;
+      height: 60px;
+      font-size: 30px;
+      background: #ffffff;
+      border: 2px solid #ccc;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+    .selected {
+      border: 2px solid #007bff;
+    }
+  </style>
+</head>
+<body>
+  <h1>🍎 Emoji Match-3 Game 🍌</h1>
+  <div id="board"></div>
+  <p>Click two tiles to swap and match 3 or more in a row!</p>
+
+  <script>
+    const boardSize = 6;
+    const emojis = ["🍎", "🍌", "🍇", "🍊", "🍉"];
+    let board = [];
+    let selected = null;
+
+    const boardDiv = document.getElementById('board');
+
+    function getRandomEmoji() {
+      return emojis[Math.floor(Math.random() * emojis.length)];
+    }
+
+    function createBoard() {
+      board = [];
+      boardDiv.innerHTML = '';
+      for (let i = 0; i < boardSize * boardSize; i++) {
+        const tile = document.createElement('div');
+        tile.className = 'tile';
+        tile.dataset.index = i;
+        tile.textContent = getRandomEmoji();
+        tile.addEventListener('click', () => handleClick(tile));
+        boardDiv.appendChild(tile);
+        board.push(tile);
+      }
+      checkMatches(); // Remove initial accidental matches
+    }
+
+    function handleClick(tile) {
+      if (selected) {
+        const i1 = parseInt(selected.dataset.index);
+        const i2 = parseInt(tile.dataset.index);
+        if (areAdjacent(i1, i2)) {
+          swapTiles(i1, i2);
+          if (!checkMatches()) {
+            // No match, swap back
+            setTimeout(() => swapTiles(i1, i2), 300);
+          }
+        }
+        selected.classList.remove('selected');
+        selected = null;
+      } else {
+        selected = tile;
+        tile.classList.add('selected');
+      }
+    }
+
+    function areAdjacent(i1, i2) {
+      const x1 = i1 % boardSize, y1 = Math.floor(i1 / boardSize);
+      const x2 = i2 % boardSize, y2 = Math.floor(i2 / boardSize);
+      return Math.abs(x1 - x2) + Math.abs(y1 - y2) === 1;
+    }
+
+    function swapTiles(i1, i2) {
+      const tmp = board[i1].textContent;
+      board[i1].textContent = board[i2].textContent;
+      board[i2].textContent = tmp;
+    }
+
+    function checkMatches() {
+      let matched = new Set();
+
+      // Horizontal
+      for (let y = 0; y < boardSize; y++) {
+        for (let x = 0; x <= boardSize - 3; x++) {
+          const i = y * boardSize + x;
+          const e = board[i].textContent;
+          if (e && e === board[i+1].textContent && e === board[i+2].textContent) {
+            matched.add(i);
+            matched.add(i+1);
+            matched.add(i+2);
+          }
+        }
+      }
+
+      // Vertical
+      for (let x = 0; x < boardSize; x++) {
+        for (let y = 0; y <= boardSize - 3; y++) {
+          const i = y * boardSize + x;
+          const e = board[i].textContent;
+          if (e && e === board[i + boardSize].textContent && e === board[i + 2 * boardSize].textContent) {
+            matched.add(i);
+            matched.add(i + boardSize);
+            matched.add(i + 2 * boardSize);
+          }
+        }
+      }
+
+      if (matched.size === 0) return false;
+
+      // Remove matches
+      matched.forEach(i => board[i].textContent = '');
+      setTimeout(dropAndFill, 300);
+      return true;
+    }
+
+    function dropAndFill() {
+      for (let x = 0; x < boardSize; x++) {
+        let col = [];
+        for (let y = boardSize - 1; y >= 0; y--) {
+          const i = y * boardSize + x;
+          const content = board[i].textContent;
+          if (content) col.push(content);
+        }
+
+        for (let y = boardSize - 1; y >= 0; y--) {
+          const i = y * boardSize + x;
+          board[i].textContent = col[boardSize - 1 - y] || getRandomEmoji();
+        }
+      }
+
+      // Check for new matches
+      setTimeout(checkMatches, 300);
+    }
+
+    createBoard();
+  </script>
+</body>
+</html>
